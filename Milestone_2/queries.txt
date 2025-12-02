@@ -2,9 +2,9 @@
 MATCH (t:Traveller)-[:STAYED_AT]->(h:Hotel)-[:LOCATED_IN]->(city:City)-[:LOCATED_IN]->(c:Country)
 MATCH (t)-[:FROM_COUNTRY]->(home:Country)
 OPTIONAL MATCH (home)-[v:NEEDS_VISA]->(c)
-WHERE v IS NULL OR home = c
-RETURN count(DISTINCT t) AS travellers_count
-######## Needs to be checked (2000 instead of 1999)
+WITH t, home, c, v
+WHERE v IS NULL OR home.name = c.name
+RETURN count(DISTINCT t) AS travellers_count;
 
 2. Query 2
 MATCH (t:Traveller)-[:WROTE]->(r:Review)-[:REVIEWED]->(h:Hotel)
