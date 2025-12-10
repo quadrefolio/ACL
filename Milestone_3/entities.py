@@ -6,13 +6,10 @@ from openai import OpenAI
 
 # Load environment variables
 load_dotenv()
-API_KEY = os.getenv("OPEN_ROUTER_API")
+API_KEY = os.getenv("OPENAI_API_KEY")
 
-# Create OpenRouter client
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=API_KEY
-)
+# Create OpenAI client (official)
+client = OpenAI(api_key=API_KEY)
 
 def extract_hotel_entities(query: str) -> dict:
     prompt = f"""
@@ -66,7 +63,7 @@ OUTPUT ONLY THE JSON OBJECT WITH NO EXTRA TEXT:
 """
 
     response = client.chat.completions.create(
-        model="google/gemma-2-9b-it",
+        model="gpt-4.1-mini",  # change model if you want
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200,
         temperature=0
@@ -81,7 +78,6 @@ OUTPUT ONLY THE JSON OBJECT WITH NO EXTRA TEXT:
         return json.loads(match.group(0))
     except:
         return {"error": "Invalid JSON", "raw": result}
-
 
 
 # -------------------- TESTS --------------------
