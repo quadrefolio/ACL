@@ -138,13 +138,86 @@ def compare_all_embeddings(target_description, top_k=5):
 if __name__ == "__main__":
     try:
         # Test 1: Specific Location (Feature should excel)
-        compare_all_embeddings("Luxury hotel in Paris", top_k=5)
+        compare_all_embeddings("Do I need a visa from United States to United Kingdom", top_k=5)
         
-        # Test 2: Vague Vibe (Topology might reveal interesting patterns)
-        compare_all_embeddings("Relaxing resort for families", top_k=5)
+        BOOKING_QUERIES = [
+            # 1. Direct Feature Search
+            "I want a hotel in Paris with excellent cleanliness standards",
+            
+            # 2. Amenities (Synonyms: "Workout" should match "Gym")
+            "Looking for a place in London with a workout facility and spa",
+            
+            # 3. Location Context (Descriptive)
+            "Hotels located in the heart of New York near main attractions",
+            
+            # 4. Negative Constraint (Hard for Vectors, good for testing MPNet)
+            "A cheap hotel that is not dirty", 
+            
+            # 5. Combined Criteria
+            "5-star luxury stay in Dubai with a swimming pool",
+            
+            # 6. Business Needs
+            "Quiet hotel in Tokyo suitable for business meetings with good wifi",
+            
+            # 7. Visa Context (Testing if it finds the destination country's hotels)
+            "Planning a trip to France, do I need travel documents?",
+            
+            # 8. Vague Location
+            "Accommodation in the capital of Italy",
+            
+            # 9. Specific Hotel Name (fuzzy search)
+            "The Rits Carlton or something similar",
+            
+            # 10. Value Focus
+            "Best value for money hotel in Berlin"
+            ]
+
+        # --- TASK 2: HOTEL RECOMMENDER SYSTEM ---
+        # Goal: Test "Vibe", "Demographics", and "Sentiment".
+        # These rely heavily on the Review Embeddings.
+
+        RECOMMENDER_QUERIES = [
+            # 1. Demographic: Couples (Vibe: Romantic)
+            "A romantic getaway for a couple with beautiful views",
+            
+            # 2. Demographic: Family (Vibe: Safe, Spacious, Activities)
+            "Family friendly resort with activities for kids",
+            
+            # 3. Demographic: Solo Female (Vibe: Safety, Location)
+            "Safe and secure hotel for a solo female traveler",
+            
+            # 4. Sentiment: Peace/Relaxation
+            "I need a very quiet and peaceful place to relax",
+            
+            # 5. Sentiment: Service Quality
+            "Hotels with incredibly helpful and polite staff",
+            
+            # 6. Activity Based
+            "Good base for sightseeing and walking tours",
+            
+            # 7. Food/Dining
+            "Hotel with an amazing breakfast buffet",
+            
+            # 8. Structural Similarity (Implicit)
+            "Something modern and stylish with high-tech amenities",
+            
+            # 9. "Hidden Gem" (Implied by high review score text)
+            "Underrated place that exceeds expectations",
+            
+            # 10. Negative Filter (Testing if it retrieves complaints - useful for 'What to avoid')
+            "Noisy rooms with bad service" 
+        ]
+            
+        for query in BOOKING_QUERIES:
+            compare_all_embeddings(query)
+            
+        for query in RECOMMENDER_QUERIES:
+            compare_all_embeddings(query)
+        # # Test 2: Vague Vibe (Topology might reveal interesting patterns)
+        # compare_all_embeddings("Relaxing resort for families", top_k=5)
         
-        # Test 3: Specific Amenity
-        compare_all_embeddings("best hotel for solo travelers", top_k=5)
+        # # Test 3: Specific Amenity
+        # compare_all_embeddings("best hotel for solo travelers", top_k=5)
         
     except Exception as e:
         print(f"❌ Error: {e}")
