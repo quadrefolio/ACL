@@ -3,11 +3,13 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 from neo4j import GraphDatabase
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-# --- CONFIGURATION ---
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "12345678"  # <--- UPDATE THIS
+
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
@@ -18,7 +20,7 @@ def enrich_visa_rules():
     print("⚙️ Processing Visa Rules...")
     
 
-    df = pd.read_csv(r'C:\Users\abdel\ACL\Milestone_2\visa.csv')
+    df = pd.read_csv('archive/visa.csv')
     
     with driver.session() as session:
         # 1. Create Constraint (to avoid duplicates)
