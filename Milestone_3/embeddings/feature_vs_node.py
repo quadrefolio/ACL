@@ -1,19 +1,13 @@
-# -*- coding: utf-8 -*-
-import sys
-import io
-
-# Fix Windows console encoding for emoji support
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
 from neo4j import GraphDatabase
 from sentence_transformers import SentenceTransformer
+import os
 
-# --- CONFIGURATION ---
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "12345678"  # <--- UPDATE THIS
+from dotenv import load_dotenv
+load_dotenv()
+
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 print("⏳ Loading Text Model for Feature Search...")
 model = SentenceTransformer('all-MiniLM-L6-v2')

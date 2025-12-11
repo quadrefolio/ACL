@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 End-to-End Test: Intent → Entities → Cypher Query → Results
 This file demonstrates the complete pipeline from user query to database results.
@@ -6,25 +5,24 @@ This file demonstrates the complete pipeline from user query to database results
 
 import sys
 import os
-import io
 
-# Fix Windows console encoding
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Add parent directory to path to import from Milestone_3
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from intent import classify_intent
 from entities import extract_hotel_entities
-from cypher_queries.baselline import resolve_cypher_query
+from cypher_queries.baseline import resolve_cypher_query
 from neo4j import GraphDatabase
 
-# Neo4j Configuration
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "12345678"
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 def execute_cypher_query(driver, query, params):
     """Execute a Cypher query and return results."""
