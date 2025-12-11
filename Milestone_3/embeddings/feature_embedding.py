@@ -3,11 +3,12 @@ from sentence_transformers import SentenceTransformer
 from neo4j import GraphDatabase
 import time
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-# --- CONFIGURATION ---
-NEO4J_URI = "neo4j://127.0.0.1:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "12345678"  # <--- UPDATE THIS
+NEO4J_URI = os.getenv("NEO4J_URI")
+NEO4J_USER = os.getenv("NEO4J_USER")
+NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 # Connect to Neo4j
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
@@ -49,11 +50,11 @@ def create_indexes(session):
 
 def enrich_hotels():
     # Read CSV
-    if not os.path.exists('../Milestone_2/hotels.csv'):
+    if not os.path.exists('archive/hotels.csv'):
         print("❌ Error: ../Milestone_2/hotels.csv not found.")
         return
         
-    df = pd.read_csv('../Milestone_2/hotels.csv')
+    df = pd.read_csv('archive/hotels.csv')
     print(f"🏨 Processing {len(df)} Hotels...")
     
     with driver.session() as session:
@@ -83,12 +84,12 @@ def enrich_hotels():
     print("✅ Hotels Enriched.")
 
 def enrich_reviews():
-    if not os.path.exists('../Milestone_2/reviews.csv'):
-        print("❌ Error: ../Milestone_2/reviews.csv not found.")
+    if not os.path.exists('archive/reviews.csv'):
+        print("❌ Error: archive/reviews.csv not found.")
         return
 
     # Optimization: Read only first 2000 for testing speed (Remove .head() for full run)
-    df = pd.read_csv('../Milestone_2/reviews.csv')
+    df = pd.read_csv('archive/reviews.csv')
     print(f"✍️ Processing {len(df)} Reviews...")
     
     count = 0

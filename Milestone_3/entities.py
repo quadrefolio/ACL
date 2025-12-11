@@ -62,7 +62,7 @@ OUTPUT:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4.1-mini",  # change model if you want
+        model="gpt-4.1-mini", 
         messages=[{"role": "user", "content": prompt}],
         max_tokens=200,
         temperature=0
