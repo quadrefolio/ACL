@@ -18,50 +18,45 @@ backend = GraphRAGBackend(
 )
 
 # ============================
-# Merge & format results
+# Merge + Clean Results
 # ============================
 def merge_results(baseline, embeddings):
     merged = []
     seen = set()
-    
-    # Normalize baseline results
+
+    # Baseline results
     for res in baseline:
-        hotel_name = res.get("Hotel")
-        if hotel_name and hotel_name not in seen:
+        name = res.get("Hotel")
+        if name and name not in seen:
             merged.append({
-                "Hotel": hotel_name,
-                "Rating": res.get("Avg_Rating_By_Group")  # Use Avg_Rating if exists
+                "Hotel": name,
+                "Rating": res.get("Avg_Rating_By_Group") or res.get("Rating") or "N/A"
             })
-            seen.add(hotel_name)
-    
-    # Normalize embedding results
+            seen.add(name)
+
+    # Embedding results
     for res in embeddings:
-        hotel_name = res.get("Hotel") or res.get("hotel")
-        if hotel_name and hotel_name not in seen:
+        name = res.get("Hotel") or res.get("hotel")
+        if name and name not in seen:
             merged.append({
-                "Hotel": hotel_name,
-                "Rating": res.get("score")  # fallback to embedding score
+                "Hotel": name,
+                "Rating": res.get("score", "N/A")
             })
-            seen.add(hotel_name)
-    
+            seen.add(name)
+
     return merged
 
 
 def format_for_context(res):
-    if "Hotel" in res:
-        hotel = res["Hotel"]
+    hotel = res.get("Hotel")
+    if hotel:
         rating = res.get("Rating", "N/A")
-        return f"Hotel: {hotel} - Rating: {rating}"
-    elif "Destination" in res:
-        destination = res["Destination"]
-        visa_type = res.get("Visa_Type", "Unknown")
-        return f"Visa Info: {destination} - {visa_type}"
-    else:
-        return str(res)
+        return f"Hotel: {hotel} | Rating: {rating}"
+    return str(res)
 
 
 # ============================
-# Initialize model
+# Model
 # ============================
 model = ChatOpenAI(
     model="gpt-4.1-mini",
@@ -69,56 +64,111 @@ model = ChatOpenAI(
 )
 
 # ============================
-# Create prompt template
+# Prompt (context + persona + task)
 # ============================
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful travel assistant."),
+llm_prompt = ChatPromptTemplate.from_messages([
+    ("system",
+     "You are a grounded travel assistant. "
+     "You must ONLY use the provided context. "
+     "If the context does not contain the answer, say: "
+     "'I do not have enough information to answer.' "
+     "Do not guess or hallucinate."
+    ),
+
     ("user",
-     "Context:\n{context}\n\n"
-     "Persona:\nYou are a helpful travel assistant.\n\n"
-     "Task:\nAnswer the user's question using only the context. "
-     "Do not mention the list, scores, or ratings explicitly; just provide a natural answer.")
+     "PERSONA: You are a travel assistant helping with hotels & visa.\n"
+     "USER QUERY:\n{task}\n\n"
+     "CONTEXT:\n{context}\n\n"
+     "TASK:\nAnswer the user strictly using the context above."
+    )
 ])
 
-# ============================
-# Output parser
-# ============================
 output_parser = StrOutputParser()
 
-# ============================
-# Full chain
-# ============================
-chain = prompt | model | output_parser
+# FIXED: chain must be llm_prompt, not undefined var
+chain = llm_prompt | model | output_parser
+
 
 # ============================
-# Query function
+# Query Function
 # ============================
 def answer_query(user_query):
-    # Step 1: Process query through backend
     resp = backend.process_query(user_query)
 
-    # Step 2: Merge baseline and embedding results
-    merged_context = merge_results(resp["baseline_results"], resp["embedding_results"])
-    
-    # Step 3: Format merged context for LLM
-    context_text = "\n".join([format_for_context(r) for r in merged_context])
-    
-    # Optional: print merged results for debugging
-    print("\n================= MERGED RESULTS =================")
+    # Merge baseline + embeddings
+    merged_context = merge_results(
+        resp["baseline_results"],
+        resp["embedding_results"]
+    )
+
+    # Format for LLM
+    context_text = "\n".join(format_for_context(r) for r in merged_context)
+
+    print("\n======= MERGED RESULTS =======")
     for i, r in enumerate(merged_context, 1):
         print(f"{i}. {r}")
-    print("=================================================\n")
-    
-    # Step 4: Invoke LLM chain
-    result = chain.invoke({
-        "context": context_text,
-        "task": user_query
+    print("==============================\n")
+
+    # Run LLM
+    answer = chain.invoke({
+        "task": user_query,
+        "context": context_text
     })
-    return result
+
+    return answer
+
+
+def run_rag(
+    user_query: str,
+    model_name: str = "gpt-4.1-mini",
+    retrieval_mode: str = "hybrid"  # baseline | embeddings | hybrid
+):
+    """
+    Main entry point for UI.
+    Returns all intermediate + final outputs for transparency.
+    """
+
+    # Run backend
+    resp = backend.process_query(user_query)
+
+    baseline_results = resp.get("baseline_results", [])
+    embedding_results = resp.get("embedding_results", [])
+
+    # Allow UI to choose retrieval mode
+    if retrieval_mode == "baseline":
+        embedding_results = []
+    elif retrieval_mode == "embeddings":
+        baseline_results = []
+
+    # Merge
+    merged = merge_results(baseline_results, embedding_results)
+
+    # Format context
+    context_text = "\n".join(format_for_context(r) for r in merged)
+
+    # Select model dynamically (for UI dropdown)
+    model = ChatOpenAI(
+        model=model_name,
+        temperature=0
+    )
+
+    local_chain = llm_prompt | model | output_parser
+
+    llm_answer = local_chain.invoke({
+        "task": user_query,
+        "context": context_text
+    })
+
+    return {
+        "baseline_results": baseline_results,
+        "embedding_results": embedding_results,
+        "merged_context": context_text,
+        "llm_answer": llm_answer
+    }
+
 
 # ============================
-# Test
+# Test run
 # ============================
 if __name__ == "__main__":
-    q = "Best hotels for families"
-    print(answer_query(q))
+    print(answer_query("Best hotels for families"))
