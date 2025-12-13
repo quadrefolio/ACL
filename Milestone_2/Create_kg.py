@@ -3,7 +3,7 @@ from neo4j import GraphDatabase
 
 def load_config():
     cfg = {}
-    with open("config.txt", "r") as f:
+    with open("Milestone_2/config.txt", "r") as f:
         for line in f:
             key, val = line.strip().split("=")
             cfg[key] = val
@@ -150,10 +150,10 @@ def main():
     uri, user, password = load_config()
     driver = GraphDatabase.driver(uri, auth=(user, password))
 
-    users = pd.read_csv("users.csv")
-    hotels = pd.read_csv("hotels.csv")
-    reviews = pd.read_csv("reviews.csv")
-    visa = pd.read_csv("visa.csv")
+    users = pd.read_csv("Milestone_2/users.csv")
+    hotels = pd.read_csv("Milestone_2/hotels.csv")
+    reviews = pd.read_csv("Milestone_2/reviews.csv")
+    visa = pd.read_csv("Milestone_2/visa.csv")
 
     hotel_avg_score = reviews.groupby("hotel_id")["score_overall"].mean().to_dict()
 

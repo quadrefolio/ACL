@@ -7,3 +7,8 @@ tensorflow
 scikit-learn
 lime
 neo4j
+openai
+python-dotenv
+sentence_transformers
+langchain
+langchain_openai
