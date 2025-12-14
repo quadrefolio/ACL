@@ -50,11 +50,11 @@ def create_indexes(session):
 
 def enrich_hotels():
     # Read CSV
-    if not os.path.exists('archive/hotels.csv'):
+    if not os.path.exists('../../archive/hotels.csv'):
         print("❌ Error: ../Milestone_2/hotels.csv not found.")
         return
         
-    df = pd.read_csv('archive/hotels.csv')
+    df = pd.read_csv('../../archive/hotels.csv')
     print(f"🏨 Processing {len(df)} Hotels...")
     
     with driver.session() as session:
@@ -84,12 +84,12 @@ def enrich_hotels():
     print("✅ Hotels Enriched.")
 
 def enrich_reviews():
-    if not os.path.exists('archive/reviews.csv'):
+    if not os.path.exists('../../archive/reviews.csv'):
         print("❌ Error: archive/reviews.csv not found.")
         return
 
     # Optimization: Read only first 2000 for testing speed (Remove .head() for full run)
-    df = pd.read_csv('archive/reviews.csv')
+    df = pd.read_csv('../../archive/reviews.csv')
     print(f"✍️ Processing {len(df)} Reviews...")
     
     count = 0

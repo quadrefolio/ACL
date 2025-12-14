@@ -5,6 +5,9 @@ from backend import GraphRAGBackend
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.chat_models import ChatHuggingFace
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import pipeline
 
 load_dotenv()
 
@@ -48,6 +51,8 @@ def merge_results(baseline, embeddings):
             if key not in seen:
                 merged.append(res)
                 seen.add(key)
+
+    print("Merged results:\n", merged)
 
     return merged
 
@@ -93,15 +98,6 @@ def format_for_context(res):
     return ", ".join(f"{k}: {v}" for k, v in res.items())
 
 
-
-# ============================
-# Model
-# ============================
-model = ChatOpenAI(
-    model="gpt-4.1-mini",
-    temperature=0
-)
-
 # ============================
 # Prompt (context + persona + task)
 # ============================
@@ -124,82 +120,105 @@ llm_prompt = ChatPromptTemplate.from_messages([
 
 output_parser = StrOutputParser()
 
-# FIXED: chain must be llm_prompt, not undefined var
-chain = llm_prompt | model | output_parser
-
 
 # ============================
 # Query Function
 # ============================
 def answer_query(user_query):
-    resp = backend.process_query(user_query)
-
-    merged_context = merge_results(
-        resp["baseline_results"],
-        resp["embedding_results"]
+    """
+    Thin wrapper for quick testing.
+    Uses the SAME pipeline as UI & evaluation.
+    """
+    result = run_rag(
+        user_query=user_query,
+        model_name="gpt-4.1-mini",
+        retrieval_mode="hybrid"
     )
+    return result["llm_answer"]
 
-    context_text = "\n\n".join(format_for_context(r) for r in merged_context)
+def get_model(model_name):
+    if model_name in ["gpt-4.1-mini", "gpt-5-mini"]:
+        return ChatOpenAI(
+            model=model_name,
+            temperature=0
+        )
 
-    print("\n======= MERGED RESULTS =======")
-    for i, r in enumerate(merged_context, 1):
-        print(f"{i}. {r}")
-    print("==============================\n")
-
-    answer = chain.invoke({
-        "task": user_query,
-        "context": context_text
-    })
-
-    return answer
+    if model_name == "google/gemma-2-2b-it":
+        pipe = pipeline(
+            "text-generation",
+            model=model_name,
+            device_map="auto"
+        )
+        return ChatHuggingFace(pipeline=pipe)
+    raise ValueError(f"Unknown model: {model_name}")
 
 
 def run_rag(
     user_query: str,
     model_name: str = "gpt-4.1-mini",
-    retrieval_mode: str = "hybrid"  # baseline | embeddings | hybrid
+    retrieval_mode: str = "hybrid"
 ):
     """
-    Main entry point for UI.
-    Returns all intermediate + final outputs for transparency.
+    Main entry point for UI + evaluation (with token tracking).
     """
 
-    # Run backend
+    # 1. Run backend
     resp = backend.process_query(user_query)
 
     baseline_results = resp.get("baseline_results", [])
     embedding_results = resp.get("embedding_results", [])
 
-    # Allow UI to choose retrieval mode
     if retrieval_mode == "baseline":
         embedding_results = []
     elif retrieval_mode == "embeddings":
         baseline_results = []
 
-    # Merge
+    # 2. Merge
     merged = merge_results(baseline_results, embedding_results)
 
-    # Format context
+    # 3. Build context
     context_text = "\n".join(format_for_context(r) for r in merged)
 
-    # Select model dynamically (for UI dropdown)
-    model = ChatOpenAI(
-        model=model_name,
-        temperature=0
-    )
-
+    # 4. Select model
+    model = get_model(model_name)
     local_chain = llm_prompt | model | output_parser
 
-    llm_answer = local_chain.invoke({
+    # -------------------------------
+    # 5. Run model + track tokens
+    # -------------------------------
+    prompt_variables = {
         "task": user_query,
         "context": context_text
-    })
+    }
 
+    # ---- OpenAI models (support .usage_metadata) ----
+    if model_name in ["gpt-4.1-mini", "gpt-5-mini"]:
+        raw_response = (llm_prompt | model).invoke(prompt_variables)
+        llm_answer = raw_response.content
+
+        token_usage = raw_response.usage_metadata
+
+    # ---- HuggingFace models (NO token metadata) ----
+    else:
+        llm_answer = local_chain.invoke(prompt_variables)
+
+        # Approximate token count
+        prompt_text = llm_prompt.format(**prompt_variables)
+        approx_tokens = int(len(prompt_text) / 4)
+
+        token_usage = {
+            "input_tokens": approx_tokens,
+            "output_tokens": int(len(llm_answer) / 4),
+            "total_tokens": approx_tokens + int(len(llm_answer) / 4)
+        }
+
+    # 6. Return everything
     return {
         "baseline_results": baseline_results,
         "embedding_results": embedding_results,
         "merged_context": context_text,
-        "llm_answer": llm_answer
+        "llm_answer": llm_answer,
+        "tokens": token_usage
     }
 
 
@@ -207,4 +226,4 @@ def run_rag(
 # Test run
 # ============================
 if __name__ == "__main__":
-    print(answer_query("Hotels in Cairo with good cleanliness"))
+    print(answer_query("Do I need a visa from United States to United Kingdom?"))

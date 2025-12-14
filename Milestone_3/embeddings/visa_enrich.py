@@ -20,7 +20,7 @@ def enrich_visa_rules():
     print("⚙️ Processing Visa Rules...")
     
 
-    df = pd.read_csv('archive/visa.csv')
+    df = pd.read_csv('../../archive/visa.csv')
     
     with driver.session() as session:
         # 1. Create Constraint (to avoid duplicates)
