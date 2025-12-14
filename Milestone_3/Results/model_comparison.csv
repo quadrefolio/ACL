@@ -1,0 +1,52 @@
+query,model,response_time_sec,total_tokens,estimated_cost,answer
+Do I need a visa from United States to United Kingdom?,gpt-4.1-mini,9.92,397,0.000199,"No, you do not need a visa to travel from the United States to the United Kingdom. The visa type is Visa-Free."
+Do I need a visa from United States to United Kingdom?,gpt-5-mini,8.92,598,0.000179,No — travelers from the United States do not require a visa to enter the United Kingdom. Visa type: Visa-Free / eVisa.
+Do I need a visa from United States to United Kingdom?,google/gemma-2-2b-it,,,,"ERROR: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/gemma-2-2b-it.
+403 Client Error. (Request ID: Root=1-693d8e59-4a0603cb6fb5660a4ce42ffe;4330fcd8-657c-4586-b8bc-76d55168674f)
+
+Cannot access gated repo for url https://huggingface.co/google/gemma-2-2b-it/resolve/main/config.json.
+Access to model google/gemma-2-2b-it is restricted and you are not in the authorized list. Visit https://huggingface.co/google/gemma-2-2b-it to ask for access."
+Recommend hotels for families in Paris,gpt-4.1-mini,4.26,330,0.000165,"I recommend the following hotels for families in Paris based on their high scores:
+
+1. The Golden Oasis - Score: 9.21
+2. Canal House Grand - Score: 9.20
+3. The Bund Palace - Score: 9.16
+4. The Maple Grove - Score: 9.16
+
+These hotels have excellent ratings and should be suitable for family stays."
+Recommend hotels for families in Paris,gpt-5-mini,8.0,523,0.000157,I do not have enough information to answer.
+Recommend hotels for families in Paris,google/gemma-2-2b-it,,,,"ERROR: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/gemma-2-2b-it.
+403 Client Error. (Request ID: Root=1-693d8e6d-1e8ff2556035bc921e5fe535;883948dd-5cd6-445f-a58e-d9b9210cb4b3)
+
+Cannot access gated repo for url https://huggingface.co/google/gemma-2-2b-it/resolve/main/config.json.
+Access to model google/gemma-2-2b-it is restricted and you are not in the authorized list. Visit https://huggingface.co/google/gemma-2-2b-it to ask for access."
+Find hotels with high cleanliness,gpt-4.1-mini,4.43,292,0.000146,"Hotels with high cleanliness scores are:
+
+- The Orchid Palace (Score: 0.747157096862793)
+- Han River Oasis (Score: 0.7432851791381836)
+- The Bund Palace (Score: 0.7371242046356201)
+- Marina Bay Zenith (Score: 0.7348675727844238)"
+Find hotels with high cleanliness,gpt-5-mini,8.82,602,0.000181,"Here are the hotels in the provided data ranked by cleanliness score (highest first):
+
+1. The Orchid Palace — 0.747157096862793  
+2. Han River Oasis — 0.7432851791381836  
+3. The Bund Palace — 0.7371242046356201  
+4. Marina Bay Zenith — 0.7348675727844238
+
+Note: Kyo-to Grand, The Maple Grove, Canal House Grand, The Golden Oasis, and Berlin Mitte Elite have cleanliness listed as N/A, so their cleanliness cannot be evaluated from the provided information."
+Find hotels with high cleanliness,google/gemma-2-2b-it,,,,"ERROR: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/gemma-2-2b-it.
+403 Client Error. (Request ID: Root=1-693d8e7f-3d658a33508019654b74a007;b039530b-9f9c-44c9-a3a9-c77f12a7a985)
+
+Cannot access gated repo for url https://huggingface.co/google/gemma-2-2b-it/resolve/main/config.json.
+Access to model google/gemma-2-2b-it is restricted and you are not in the authorized list. Visit https://huggingface.co/google/gemma-2-2b-it to ask for access."
+Show reviews for Hilton London,gpt-4.1-mini,3.47,192,9.6e-05,I do not have enough information to answer.
+Show reviews for Hilton London,gpt-5-mini,7.0,456,0.000137,I do not have enough information to answer.
+Show reviews for Hilton London,google/gemma-2-2b-it,,,,"ERROR: You are trying to access a gated repo.
+Make sure to have access to it at https://huggingface.co/google/gemma-2-2b-it.
+403 Client Error. (Request ID: Root=1-693d8e90-224ef6c574bde1d8355d7a7a;37cce79d-8d66-40aa-8803-937f06f91867)
+
+Cannot access gated repo for url https://huggingface.co/google/gemma-2-2b-it/resolve/main/config.json.
+Access to model google/gemma-2-2b-it is restricted and you are not in the authorized list. Visit https://huggingface.co/google/gemma-2-2b-it to ask for access."
