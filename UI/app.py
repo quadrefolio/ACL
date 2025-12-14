@@ -50,31 +50,38 @@ st.set_page_config(
 # ═══════════════════════════════════════════════════════════════════════════════
 st.markdown("""
 <style>
-  /* Message Bubbles */
+  /* Message Bubbles - Base Styles */
   .bubble {
     border-radius: 12px;
     padding: 12px;
     margin: 2px 0 !important;
-    max-width: 70% !important;
-    min-width: fit-content !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     word-break: break-word;
-    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    line-height: 1.5;
     white-space: pre-wrap;
   }
             
+  /* User Bubble - Compact, right-aligned */
   .bubble-user {
     background: #e7fce3;
     border: 1px solid #b2e5ad;
     color: #093d05;
     animation: bubbleInRight 250ms ease-out;
+    max-width: 60% !important;
+    width: fit-content !important;
+    margin-left: auto !important;
   }
   
+  /* Assistant Bubble - Wider, left-aligned */
   .bubble-assistant {
     background: #f5f5f5;
     border: 1px solid #e1e1e1;
     color: #1f2937;
     animation: bubbleInLeft 250ms ease-out;
+    max-width: 75% !important;
+    width: fit-content !important;
   }
 
   /* Chat Row Layout */
@@ -210,7 +217,7 @@ def delete_conversation(cid):
 
 if "config" not in st.session_state:
     st.session_state.config = {
-        "model": "gpt-4o-mini",
+        "model": "gpt-4.1-mini",
         "strategy": "hybrid"
     }
 
@@ -254,9 +261,9 @@ with st.sidebar:
     # LLM Model Selection
     selected_model = st.selectbox(
         "LLM Model",
-        ["gpt-4o-mini", "gpt-4.1-mini"],
-        index=["gpt-4o-mini", "gpt-4.1-mini"].index(
-            st.session_state.config.get("model", "gpt-4o-mini")
+        ["gpt-4.1-mini", "gpt-5-mini", "google/gemma-2-2b-it"],
+        index=["gpt-4.1-mini", "gpt-5-mini", "google/gemma-2-2b-it"].index(
+            st.session_state.config.get("model", "gpt-4.1-mini")
         ),
         help="Select the LLM model for response generation",
         key="sb_model"

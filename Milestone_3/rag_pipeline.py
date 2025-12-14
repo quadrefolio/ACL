@@ -75,12 +75,29 @@ def format_for_context(res):
             res.get("Safety_Location_Score") or
             res.get("Facility_Score") or
             res.get("cleanliness_score") or
-            res.get("score") or
             res.get("Rating") or
             "N/A"
         )
 
-        return f"Hotel: {hotel} | Score: {rating}"
+        # Build detailed context
+        parts = [f"Hotel: {hotel}"]
+        
+        # Add all available details
+        if "City" in res:
+            parts.append(f"City: {res['City']}")
+        if "Country" in res:
+            parts.append(f"Country: {res['Country']}")
+        if "Stars" in res:
+            parts.append(f"Stars: {res['Stars']}")
+        if rating != "N/A":
+            parts.append(f"Rating: {rating}")
+        
+        # Add other relevant fields
+        for key in ['address', 'amenities', 'description', 'price', 'room_type']:
+            if key in res:
+                parts.append(f"{key.replace('_', ' ').title()}: {res[key]}")
+        
+        return " | ".join(parts)
 
     # ---- VISA RULES ----
     if "from_country" in res and "to_country" in res:
@@ -103,18 +120,18 @@ def format_for_context(res):
 # ============================
 llm_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a grounded travel assistant. "
-     "You must ONLY use the provided context. "
-     "If the context does not contain the answer, say: "
-     "'I do not have enough information to answer.' "
-     "Do not guess or hallucinate."
+     "You are a helpful and knowledgeable travel assistant specializing in hotel recommendations and visa information. "
+     "Use the provided context to answer user queries accurately and naturally. "
+     "When hotels are mentioned in the context, provide their details including name, location, rating, and any other relevant information. "
+     "If the context contains relevant information but not all details, work with what's available. "
+     "Only say 'I do not have enough information' if the context is completely empty or unrelated to the query."
     ),
 
     ("user",
-     "PERSONA: You are a travel assistant helping with hotels & visa.\n"
-     "USER QUERY:\n{task}\n\n"
-     "CONTEXT:\n{context}\n\n"
-     "TASK:\nAnswer the user strictly using the context above."
+     "USER QUERY: {task}\n\n"
+     "AVAILABLE INFORMATION:\n{context}\n\n"
+     "Please provide a helpful response based on the information above. "
+     "If multiple hotels are listed, present them in a clear, organized format."
     )
 ])
 
