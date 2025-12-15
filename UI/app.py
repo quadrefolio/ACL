@@ -70,7 +70,6 @@ st.markdown("""
     color: #093d05;
     animation: bubbleInRight 250ms ease-out;
     max-width: 60% !important;
-    width: fit-content !important;
     margin-left: auto !important;
   }
   
@@ -80,7 +79,7 @@ st.markdown("""
     border: 1px solid #e1e1e1;
     color: #1f2937;
     animation: bubbleInLeft 250ms ease-out;
-    max-width: 75% !important;
+    max-width: 60% !important;
     width: fit-content !important;
   }
 

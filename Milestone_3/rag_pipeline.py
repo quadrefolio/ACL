@@ -116,15 +116,64 @@ def format_for_context(res):
 
 
 # ============================
+# Query Validation
+# ============================
+def is_hotel_related_query(query: str) -> bool:
+    """
+    Check if the query is related to hotels, travel, or visa information.
+    Reject code writing, general knowledge, or off-topic requests.
+    """
+    query_lower = query.lower()
+    
+    # Keywords that indicate hotel/travel queries
+    hotel_keywords = [
+        'hotel', 'room', 'booking', 'stay', 'accommodation',
+        'resort', 'lodge', 'inn', 'motel', 'guest house',
+        'check-in', 'check-out', 'reservation',
+        'visa', 'travel', 'trip', 'destination',
+        'city', 'country', 'rating', 'review',
+        'amenities', 'price', 'location'
+    ]
+    
+    # Keywords that indicate non-hotel queries (reject these)
+    reject_keywords = [
+        'write code', 'program', 'script', 'function',
+        'create a', 'build a', 'develop',
+        'python code', 'javascript', 'algorithm',
+        'debug', 'fix code', 'implement'
+    ]
+    
+    # Check for reject keywords first
+    for keyword in reject_keywords:
+        if keyword in query_lower:
+            return False
+    
+    # Check for hotel-related keywords
+    for keyword in hotel_keywords:
+        if keyword in query_lower:
+            return True
+    
+    # If no hotel keywords found, reject
+    return False
+
+
+# ============================
 # Prompt (context + persona + task)
 # ============================
 llm_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "You are a helpful and knowledgeable travel assistant specializing in hotel recommendations and visa information. "
-     "Use the provided context to answer user queries accurately and naturally. "
-     "When hotels are mentioned in the context, provide their details including name, location, rating, and any other relevant information. "
-     "If the context contains relevant information but not all details, work with what's available. "
-     "Only say 'I do not have enough information' if the context is completely empty or unrelated to the query."
+     "You are a specialized hotel and travel assistant. You ONLY answer questions about:"
+     "- Hotel recommendations and information"
+     "- Visa requirements for travel"
+     "- Travel destinations and accommodations"
+     "\n\n"
+     "You MUST NOT:"
+     "- Write code or programming scripts"
+     "- Answer general knowledge questions unrelated to hotels/travel"
+     "- Provide information outside the hotel and travel domain"
+     "\n\n"
+     "Use the provided context to answer hotel and travel queries accurately. "
+     "When hotels are mentioned, provide their details including name, location, rating, and relevant information."
     ),
 
     ("user",
@@ -146,6 +195,10 @@ def answer_query(user_query):
     Thin wrapper for quick testing.
     Uses the SAME pipeline as UI & evaluation.
     """
+    # Validate query before processing
+    if not is_hotel_related_query(user_query):
+        return "I'm sorry, I can only answer questions about hotels, accommodations, and travel visa information. Please ask a hotel or travel-related question."
+    
     result = run_rag(
         user_query=user_query,
         model_name="gpt-4.1-mini",
@@ -178,6 +231,16 @@ def run_rag(
     """
     Main entry point for UI + evaluation (with token tracking).
     """
+
+    # 0. Validate query
+    if not is_hotel_related_query(user_query):
+        return {
+            "baseline_results": [],
+            "embedding_results": [],
+            "merged_context": "",
+            "llm_answer": "I'm sorry, I can only answer questions about hotels, accommodations, and travel visa information. Please ask a hotel or travel-related question.",
+            "tokens": {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+        }
 
     # 1. Run backend
     resp = backend.process_query(user_query)
