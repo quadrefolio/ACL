@@ -145,12 +145,10 @@ st.markdown("""
     border: 0px solid #e5e7eb !important;
     border-radius: 12px !important;
     box-shadow: none !important;
-    color: #ffffff !important;
   }
 
   [data-testid="stChatInput"] textarea::placeholder,
   [data-testid="stChatInput"] input::placeholder {
-    color: #9ca3af !important;
     opacity: 0.7 !important;
   }
 </style>
@@ -210,6 +208,110 @@ def delete_conversation(cid):
         st.session_state.active_conversation_id = None
 
 
+def display_rag_context(response, context_key_suffix=""):
+    """Display RAG context expander with metrics and tabs.
+    
+    Args:
+        response: Dictionary containing intent, entities, metrics, and results
+        context_key_suffix: Unique suffix for text_area key to avoid conflicts
+    """
+    with st.expander(f"🕵️ View RAG Context & Metrics (Latency: {response['metrics']['latency']}s)", expanded=False):
+        # Metrics
+        col1, col2, col3, col4, col5 = st.columns(5)
+        col1.metric("⏱️ Latency", f"{response['metrics']['latency']}s")
+        col2.metric("🔤 Tokens", f"{response['metrics']['tokens']}")
+        col3.metric("💰 Cost", f"${response['metrics']['cost']:.4f}")
+        col4.metric("📊 Baseline", f"{response['metrics'].get('baseline_count', 0)}")
+        col5.metric("🎯 Embeddings", f"{response['metrics'].get('embedding_count', 0)}")
+        
+        st.divider()
+        
+        # Context Tabs
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "🎯 Intent & Entities",
+            "📊 Knowledge Graph",
+            "📦 Retrieved Data",
+            "🔍 Merged Context"
+        ])
+        
+        with tab1:
+            st.subheader("Query Understanding")
+            
+            intent = response.get("intent", "Unknown")
+            intent_icons = {
+                "HOTEL_SEARCH": "🏨",
+                "RECOMMEND_HOTEL": "⭐",
+                "VISA_INFO": "🛂",
+                "BOOKING_ACTION": "📅",
+                "SEARCH_REVIEW": "💬"
+            }
+            st.markdown(f"### Intent: {intent_icons.get(intent, '❓')} `{intent}`")
+            
+            entities = response.get("entities", {})
+            st.markdown("### Extracted Entities")
+            
+            if isinstance(entities, dict) and entities:
+                if entities.get("hotels"):
+                    st.markdown(f"**🏨 Hotels:** {', '.join(entities['hotels'])}")
+                if entities.get("cities"):
+                    st.markdown(f"**🏙️ Cities:** {', '.join(entities['cities'])}")
+                if entities.get("countries"):
+                    st.markdown(f"**🌍 Countries:** {', '.join(entities['countries'])}")
+                if entities.get("traveller_type"):
+                    st.markdown(f"**👥 Traveller Type:** {entities['traveller_type']}")
+                if entities.get("demographics"):
+                    demo = entities["demographics"]
+                    demo_str = []
+                    if demo.get("gender"):
+                        demo_str.append(f"Gender: {demo['gender']}")
+                    if demo.get("age_group"):
+                        demo_str.append(f"Age: {demo['age_group']}")
+                    if demo_str:
+                        st.markdown(f"**👤 Demographics:** {', '.join(demo_str)}")
+            else:
+                st.info("No entities extracted.")
+        
+        with tab2:
+            st.subheader("Knowledge Graph Visualization")
+            graph_viz = response.get("graph_viz")
+            if not graph_viz:
+                # Generate graph if not already present
+                graph_viz = create_knowledge_graph_visualization(
+                    response.get("baseline_results", []),
+                    response.get("embedding_results", []),
+                    response.get("intent", ""),
+                    response.get("entities", {})
+                )
+            if graph_viz:
+                st.graphviz_chart(graph_viz)
+            else:
+                st.info("No graph visualization available.")
+        
+        with tab3:
+            st.subheader("Retrieved Data from Neo4j")
+            
+            baseline = response.get("baseline_results", [])
+            if baseline:
+                st.markdown("#### 🗄️ Baseline Results (Cypher Query)")
+                st.json(baseline[:5])
+            
+            embeddings = response.get("embedding_results", [])
+            if embeddings:
+                st.markdown("#### 🎯 Embedding Results (Vector Search)")
+                st.json(embeddings[:5])
+            
+            if not baseline and not embeddings:
+                st.info("No data retrieved.")
+        
+        with tab4:
+            st.subheader("Merged Context (RAG Input)")
+            context_text = response.get("merged_context", "")
+            if context_text:
+                st.text_area("Context provided to LLM:", context_text, height=300, key=f"ctx_{context_key_suffix}")
+            else:
+                st.info("No merged context available.")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # SESSION STATE INITIALIZATION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -240,9 +342,6 @@ if "backend" not in st.session_state:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 with st.sidebar:
-    st.title("LuxStay AI")
-    st.divider()
-
     # System Status
     st.subheader("📡 System Status")
     if st.session_state.backend:
@@ -361,92 +460,9 @@ for i, msg in enumerate(messages):
 
         # Display RAG Context & Metrics for Assistant Messages
         if role == "assistant" and "context" in msg:
-            with st.expander(f"🕵️ View RAG Context & Metrics (Latency: {msg['metrics']['latency']}s)", expanded=False):
-                # Metrics
-                col1, col2, col3, col4, col5 = st.columns(5)
-                col1.metric("⏱️ Latency", f"{msg['metrics']['latency']}s")
-                col2.metric("🔤 Tokens", f"{msg['metrics']['tokens']}")
-                col3.metric("💰 Cost", f"${msg['metrics']['cost']:.4f}")
-                col4.metric("📊 Baseline", f"{msg['metrics'].get('baseline_count', 0)}")
-                col5.metric("🎯 Embeddings", f"{msg['metrics'].get('embedding_count', 0)}")
-                
-                st.divider()
-                
-                # Context Tabs
-                tab1, tab2, tab3, tab4 = st.tabs([
-                    "🎯 Intent & Entities", 
-                    "📊 Knowledge Graph", 
-                    "📦 Retrieved Data", 
-                    "🔍 Merged Context"
-                ])
-                
-                with tab1:
-                    st.subheader("Query Understanding")
-                    
-                    intent = msg["context"].get("intent", "Unknown")
-                    intent_icons = {
-                        "HOTEL_SEARCH": "🏨",
-                        "RECOMMEND_HOTEL": "⭐",
-                        "VISA_INFO": "🛂",
-                        "BOOKING_ACTION": "📅",
-                        "SEARCH_REVIEW": "💬"
-                    }
-                    st.markdown(f"### Intent: {intent_icons.get(intent, '❓')} `{intent}`")
-                    
-                    entities = msg["context"].get("entities", {})
-                    st.markdown("### Extracted Entities")
-                    
-                    if isinstance(entities, dict) and entities:
-                        if entities.get("hotels"):
-                            st.markdown(f"**🏨 Hotels:** {', '.join(entities['hotels'])}")
-                        if entities.get("cities"):
-                            st.markdown(f"**🏙️ Cities:** {', '.join(entities['cities'])}")
-                        if entities.get("countries"):
-                            st.markdown(f"**🌍 Countries:** {', '.join(entities['countries'])}")
-                        if entities.get("traveller_type"):
-                            st.markdown(f"**👥 Traveller Type:** {entities['traveller_type']}")
-                        if entities.get("demographics"):
-                            demo = entities["demographics"]
-                            demo_str = []
-                            if demo.get("gender"):
-                                demo_str.append(f"Gender: {demo['gender']}")
-                            if demo.get("age_group"):
-                                demo_str.append(f"Age: {demo['age_group']}")
-                            if demo_str:
-                                st.markdown(f"**👤 Demographics:** {', '.join(demo_str)}")
-                    else:
-                        st.info("No entities extracted.")
-                
-                with tab2:
-                    st.subheader("Knowledge Graph Visualization")
-                    if msg["context"].get("graph_viz"):
-                        st.graphviz_chart(msg["context"]["graph_viz"])
-                    else:
-                        st.info("No graph visualization available.")
-                
-                with tab3:
-                    st.subheader("Retrieved Data from Neo4j")
-                    
-                    baseline = msg["context"].get("baseline_results", [])
-                    if baseline:
-                        st.markdown("#### 🗄️ Baseline Results (Cypher Query)")
-                        st.json(baseline[:5])
-                    
-                    embeddings = msg["context"].get("embedding_results", [])
-                    if embeddings:
-                        st.markdown("#### 🎯 Embedding Results (Vector Search)")
-                        st.json(embeddings[:5])
-                    
-                    if not baseline and not embeddings:
-                        st.info("No data retrieved.")
-                
-                with tab4:
-                    st.subheader("Merged Context (RAG Input)")
-                    context_text = msg["context"].get("merged_context", "")
-                    if context_text:
-                        st.text_area("Context provided to LLM:", context_text, height=300, key=f"ctx_{i}")
-                    else:
-                        st.info("No merged context available.")
+            # Combine context and metrics for display
+            display_data = {**msg["context"], "metrics": msg["metrics"]}
+            display_rag_context(display_data, context_key_suffix=str(i))
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CHAT INPUT HANDLER
@@ -482,92 +498,7 @@ if prompt:
         )
         
         # Display RAG Context & Metrics
-        with st.expander(f"🕵️ View RAG Context & Metrics (Latency: {response['metrics']['latency']}s)", expanded=False):
-            col1, col2, col3, col4, col5 = st.columns(5)
-            col1.metric("⏱️ Latency", f"{response['metrics']['latency']}s")
-            col2.metric("🔤 Tokens", f"{response['metrics']['tokens']}")
-            col3.metric("💰 Cost", f"${response['metrics']['cost']:.4f}")
-            col4.metric("📊 Baseline", f"{response['metrics'].get('baseline_count', 0)}")
-            col5.metric("🎯 Embeddings", f"{response['metrics'].get('embedding_count', 0)}")
-            
-            st.divider()
-            
-            tab1, tab2, tab3, tab4 = st.tabs([
-                "🎯 Intent & Entities",
-                "📊 Knowledge Graph",
-                "📦 Retrieved Data",
-                "🔍 Merged Context"
-            ])
-            
-            with tab1:
-                st.subheader("Query Understanding")
-                intent = response.get("intent", "Unknown")
-                intent_icons = {
-                    "HOTEL_SEARCH": "🏨",
-                    "RECOMMEND_HOTEL": "⭐",
-                    "VISA_INFO": "🛂",
-                    "BOOKING_ACTION": "📅",
-                    "SEARCH_REVIEW": "💬"
-                }
-                st.markdown(f"### Intent: {intent_icons.get(intent, '❓')} `{intent}`")
-                
-                entities = response.get("entities", {})
-                st.markdown("### Extracted Entities")
-                
-                if isinstance(entities, dict) and entities:
-                    if entities.get("hotels"):
-                        st.markdown(f"**🏨 Hotels:** {', '.join(entities['hotels'])}")
-                    if entities.get("cities"):
-                        st.markdown(f"**🏙️ Cities:** {', '.join(entities['cities'])}")
-                    if entities.get("countries"):
-                        st.markdown(f"**🌍 Countries:** {', '.join(entities['countries'])}")
-                    if entities.get("traveller_type"):
-                        st.markdown(f"**👥 Traveller Type:** {entities['traveller_type']}")
-                    if entities.get("demographics"):
-                        demo = entities["demographics"]
-                        demo_str = []
-                        if demo.get("gender"):
-                            demo_str.append(f"Gender: {demo['gender']}")
-                        if demo.get("age_group"):
-                            demo_str.append(f"Age: {demo['age_group']}")
-                        if demo_str:
-                            st.markdown(f"**👤 Demographics:** {', '.join(demo_str)}")
-                else:
-                    st.info("No entities extracted.")
-            
-            with tab2:
-                st.subheader("Knowledge Graph Visualization")
-                graph_viz = create_knowledge_graph_visualization(
-                    response.get("baseline_results", []),
-                    response.get("embedding_results", []),
-                    response.get("intent", ""),
-                    response.get("entities", {})
-                )
-                st.graphviz_chart(graph_viz)
-            
-            with tab3:
-                st.subheader("Retrieved Data from Neo4j")
-                
-                baseline = response.get("baseline_results", [])
-                if baseline:
-                    st.markdown("#### 🗄️ Baseline Results (Cypher Query)")
-                    st.json(baseline[:5])
-                
-                embeddings = response.get("embedding_results", [])
-                if embeddings:
-                    st.markdown("#### 🎯 Embedding Results (Vector Search)")
-                    st.json(embeddings[:5])
-                
-                if not baseline and not embeddings:
-                    st.info("No data retrieved.")
-            
-            with tab4:
-                st.subheader("Merged Context (RAG Input)")
-                context_text = response.get("merged_context", "")
-                if context_text:
-                    st.text_area("Context provided to LLM:", context_text, height=300, key="ctx_new")
-                else:
-                    st.info("No merged context available.")
+        display_rag_context(response, context_key_suffix="new")
 
         # Save assistant message with context
         context_data = {

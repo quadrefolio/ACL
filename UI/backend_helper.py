@@ -32,8 +32,6 @@ else:
 
 # Import backend modules
 from rag_pipeline import run_rag
-from intent import classify_intent
-from entities import extract_hotel_entities
 from backend import GraphRAGBackend
 
 
@@ -74,60 +72,12 @@ def process_query(prompt, model_name="gpt-4o-mini", retrieval_mode="hybrid"):
     start_time = time.time()
     
     try:
-        # Step 1: Classify intent
-        intent = classify_intent(prompt)
-        
-        # Step 2: Extract entities
-        entities = extract_hotel_entities(prompt)
-        
-        # Step 3: Run RAG pipeline
-        # Try with the requested retrieval mode first
-        try:
-            rag_response = run_rag(
-                user_query=prompt,
-                model_name=model_name,
-                retrieval_mode=retrieval_mode
-            )
-        except Exception as embed_error:
-            # If embeddings fail (e.g., missing vector index), handle based on user's choice
-            if "vector" in str(embed_error).lower() or "index" in str(embed_error).lower():
-                print(f"⚠️ Embeddings search failed: {embed_error}")
-                
-                # If user specifically requested embeddings-only, inform them it's unavailable
-                if retrieval_mode == "embeddings":
-                    return {
-                        "success": False,
-                        "error": "Embeddings unavailable",
-                        "llm_answer": "⚠️ **Embeddings mode is unavailable**\n\nThe vector index is not set up in Neo4j. Please run the embedding setup scripts or switch to 'baseline' or 'hybrid' mode.",
-                        "intent": classify_intent(prompt),
-                        "entities": extract_hotel_entities(prompt),
-                        "baseline_results": [],
-                        "embedding_results": [],
-                        "merged_context": "",
-                        "metrics": {
-                            "latency": 0,
-                            "tokens": 0,
-                            "cost": 0,
-                            "baseline_count": 0,
-                            "embedding_count": 0
-                        }
-                    }
-                
-                # For hybrid or baseline mode, fallback to baseline only
-                print("📊 Falling back to baseline-only mode...")
-                rag_response = run_rag(
-                    user_query=prompt,
-                    model_name=model_name,
-                    retrieval_mode="baseline"
-                )
-                # Add warning to response
-                if rag_response.get("llm_answer"):
-                    rag_response["llm_answer"] = (
-                        "⚠️ *Note: Vector embeddings unavailable. Using baseline Cypher queries only.*\n\n" +
-                        rag_response["llm_answer"]
-                    )
-            else:
-                raise  # Re-raise if it's not an embeddings issue
+        # Run RAG pipeline (handles intent classification, entity extraction, and retrieval)
+        rag_response = run_rag(
+            user_query=prompt,
+            model_name=model_name,
+            retrieval_mode=retrieval_mode
+        )
         
         # Calculate metrics
         latency = round(time.time() - start_time, 2)
@@ -146,8 +96,8 @@ def process_query(prompt, model_name="gpt-4o-mini", retrieval_mode="hybrid"):
         
         return {
             "success": True,
-            "intent": intent,
-            "entities": entities,
+            "intent": rag_response.get("intent", "UNKNOWN"),
+            "entities": rag_response.get("entities", {}),
             "baseline_results": baseline_results,
             "embedding_results": embedding_results,
             "merged_context": context_text,
@@ -205,14 +155,14 @@ def create_knowledge_graph_visualization(baseline_results, embedding_results, in
     
     # Node styling by type
     node_styles = {
-        "Hotel": {"shape": "box", "style": "filled,rounded", "fillcolor": "#4A90E2", "fontcolor": "white"},
-        "City": {"shape": "ellipse", "style": "filled", "fillcolor": "#F5A623", "fontcolor": "white"},
-        "Review": {"shape": "note", "style": "filled", "fillcolor": "#7ED321", "fontcolor": "white"},
-        "User": {"shape": "box", "style": "filled", "fillcolor": "#BD10E0", "fontcolor": "white"},
-        "Traveller": {"shape": "box", "style": "filled", "fillcolor": "#BD10E0", "fontcolor": "white"},
-        "Rating": {"shape": "diamond", "style": "filled", "fillcolor": "#50E3C2", "fontcolor": "white"},
-        "Visa": {"shape": "hexagon", "style": "filled", "fillcolor": "#E94B3C", "fontcolor": "white"},
-        "Country": {"shape": "doubleoctagon", "style": "filled", "fillcolor": "#FF6B6B", "fontcolor": "white"}
+        "Hotel": {"shape": "circle", "style": "filled,rounded", "fillcolor": "#4A90E2", "fontcolor": "white"},
+        "City": {"shape": "circle", "style": "filled", "fillcolor": "#F5A623", "fontcolor": "white"},
+        "Review": {"shape": "circle", "style": "filled", "fillcolor": "#7ED321", "fontcolor": "white"},
+        "User": {"shape": "circle", "style": "filled", "fillcolor": "#BD10E0", "fontcolor": "white"},
+        "Traveller": {"shape": "circle", "style": "filled", "fillcolor": "#BD10E0", "fontcolor": "white"},
+        "Rating": {"shape": "circle", "style": "filled", "fillcolor": "#50E3C2", "fontcolor": "white"},
+        "Visa": {"shape": "circle", "style": "filled", "fillcolor": "#E94B3C", "fontcolor": "white"},
+        "Country": {"shape": "circle", "style": "filled", "fillcolor": "#FF6B6B", "fontcolor": "white"}
     }
     
     added_nodes = set()
@@ -236,12 +186,39 @@ def create_knowledge_graph_visualization(baseline_results, embedding_results, in
                     added_nodes.add(city)
                 graph.edge(f"hotel_{idx}", city_id, label="LOCATED_IN")
             
-            # Add rating node
-            rating = result.get("Rating") or result.get("average_reviews_score") or result.get("Score")
+            # Add stars node (5-star, 4-star, etc.)
+            stars = result.get("Stars") or result.get("stars")
+            if stars:
+                stars_id = f"stars_{idx}"
+                graph.node(stars_id, f"{'⭐' * int(stars)}", **node_styles["Rating"])
+                graph.edge(f"hotel_{idx}", stars_id, label="STARS")
+            
+            # Add overall rating node
+            rating = result.get("Rating") or result.get("rating") or result.get("average_reviews_score") or result.get("Score")
             if rating:
                 rating_id = f"rating_{idx}"
                 graph.node(rating_id, f"★ {rating}", **node_styles["Rating"])
-                graph.edge(f"hotel_{idx}", rating_id, label="HAS_RATING")
+                graph.edge(f"hotel_{idx}", rating_id, label="RATING")
+            
+            # Add detailed ratings if available (from embeddings)
+            comfort = result.get("comfort_rating")
+            cleanliness = result.get("cleanliness_rating")
+            value = result.get("value_for_money_rating")
+            
+            if comfort:
+                comfort_id = f"comfort_{idx}"
+                graph.node(comfort_id, f"Comfort: {comfort}", **node_styles["Rating"])
+                graph.edge(f"hotel_{idx}", comfort_id, label="COMFORT")
+            
+            if cleanliness:
+                clean_id = f"clean_{idx}"
+                graph.node(clean_id, f"Clean: {cleanliness}", **node_styles["Rating"])
+                graph.edge(f"hotel_{idx}", clean_id, label="CLEANLINESS")
+            
+            if value:
+                value_id = f"value_{idx}"
+                graph.node(value_id, f"Value: {value}", **node_styles["Rating"])
+                graph.edge(f"hotel_{idx}", value_id, label="VALUE")
         
         # Handle Visa nodes
         destination = result.get("Destination")
