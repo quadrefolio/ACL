@@ -7,6 +7,20 @@
   <img src="https://img.shields.io/badge/Streamlit-UI-red.svg" alt="Streamlit">
 </p>
 
+## 💡 What is LuxStay AI?
+
+**LuxStay AI** is a smart chatbot that helps you find the perfect hotel and check visa requirements for any country. Simply chat with it naturally like "Find me a 5-star hotel in Paris" or "Do I need a visa from USA to France?" and it understands what you need.
+
+**How it works:**
+- Uses a **Knowledge Graph** (Neo4j) to store hotel data, reviews, and visa information as connected nodes
+- Employs **AI embeddings** to understand the meaning of your questions, not just keywords
+- Leverages **GPT-4** to generate natural, conversational responses
+- Combines structured data (database queries) with AI intelligence for accurate, context-aware recommendations
+
+**In simple terms:** Traditional search engines match keywords, but LuxStay AI understands intent. It knows "cheap hotel near Eiffel Tower" means you want a budget-friendly hotel in Paris with proximity to landmarks, and finds exactly that by connecting the dots in its knowledge graph.
+
+---
+
 An intelligent hotel recommendation and visa information system built with **Graph Retrieval-Augmented Generation (GraphRAG)** technology. This project leverages Neo4j knowledge graphs, OpenAI embeddings, and advanced NLP techniques to provide personalized hotel recommendations and visa requirement information through an interactive chat interface.
 
 ## 🌟 Features
@@ -103,20 +117,15 @@ python3 -m venv fire_env_tf
 source fire_env_tf/bin/activate
 ```
 
-### Step 3: Install Dependencies
+### Step 3: Install All Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-**Main Dependencies:**
-- `streamlit` - Web UI framework
-- `neo4j` - Graph database driver
-- `openai` - OpenAI API client
-- `langchain` & `langchain_openai` - LLM orchestration
-- `sentence-transformers` - Embedding models
-- `pandas` & `numpy` - Data manipulation
-- `scikit-learn` - ML utilities
-- `python-dotenv` - Environment variable management
+This single command installs everything you need:
+- Web UI, graph database drivers, OpenAI integration
+- Machine learning libraries, embeddings, NLP tools
+- All utilities and dependencies
 
 ### Step 4: Set Up Neo4j Database
 
@@ -169,28 +178,19 @@ This will:
 ```bash
 cd ../Milestone_3/embeddings
 
-# Generate feature embeddings for hotels
-python feature_embedding.py
-
-# Enrich visa data with embeddings
-python visa_enrich.py
-```
-
-**Important:** Update file paths in the scripts to match your local setup before running.
-
-### Step 8: Verify Backend Functionality
+# Generate feature embeddings f and Verify Setup
 
 ```bash
+cd Milestone_3/embeddings
+python feature_embedding.py
+python visa_enrich.py
 cd ..
 python backend.py
 ```
 
-This will test the backend pipeline and ensure everything is working correctly.
+**Important:** Update file paths in the embedding scripts if your data is in a different location.
 
-## 🎮 Usage
-
-### Launch the Web Interface
-
+This generates semantic embeddings for hotels and visa data, then verifies the backend is working
 ```bash
 cd UI
 streamlit run app.py
@@ -198,14 +198,14 @@ streamlit run app.py
 
 The application will open in your browser at `http://localhost:8501`
 
-### Example Queries
+### Example QueApplication
 
-**Hotel Recommendations:**
-- "Show me 5-star hotels in Paris with pools"
-- "I need a budget-friendly hotel near Times Square"
-- "Find hotels in Tokyo with good reviews"
-- "What are the best luxury hotels in Dubai?"
+```bash
+cd UI
+streamlit run app.py
+```
 
+The app will automatically
 **Visa Information:**
 - "Do I need a visa from USA to France?"
 - "What are the visa requirements for Egypt from UK?"
@@ -274,17 +274,11 @@ ACL/
 │   └── Results/                     # Evaluation results
 │       └── model_comparison.csv
 │
-├── UI/                               # Streamlit Web Interface
-│   ├── app.py                       # Main Streamlit app
-│   ├── backend_helper.py            # Backend integration
-│   ├── requirements.txt             # UI-specific dependencies
-│   ├── .env                         # UI environment variables
-│   └── UI_VISUAL_WORKFLOW.md        # UI documentation
-│
-└── milestone1/                       # Initial data analysis
-    ├── main.ipynb                   # Exploratory analysis
-    ├── model.ipynb                  # Model experiments
-    └── final_dataset.csv            # Processed dataset
+└── UI/                               # Streamlit Web Interface
+    ├── app.py                       # Main Streamlit app
+    ├── backend_helper.py            # Backend integration
+    ├── .env                         # UI environment variables
+    └── UI_VISUAL_WORKFLOW.md        # UI documentation
 ```
 
 ## 🔧 Configuration
