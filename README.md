@@ -334,21 +334,6 @@ cd Milestone_3
 python model_eval.py
 ```
 
-## 📈 Performance
-
-### Retrieval Mode Comparison
-
-| Mode       | Avg Latency | Precision | Recall | F1 Score |
-|------------|-------------|-----------|--------|----------|
-| Baseline   | 150ms       | 0.85      | 0.75   | 0.80     |
-| Embeddings | 250ms       | 0.78      | 0.88   | 0.83     |
-| Hybrid     | 300ms       | 0.90      | 0.92   | 0.91     |
-
-### Scalability
-- Handles 1000+ hotels in database
-- Supports 50+ countries with visa information
-- Sub-second response times for most queries
-
 ## 🛠️ Technologies Used
 
 - **Backend**: Python 3.10+
@@ -370,38 +355,3 @@ Contributions are welcome! Please follow these steps:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Authors
-
-- **ACL Project Team** - *Milestone 3 Implementation*
-
-## 🙏 Acknowledgments
-
-- Neo4j for the graph database platform
-- OpenAI for GPT-4 and embedding models
-- Sentence Transformers for efficient embedding generation
-- LangChain for LLM orchestration
-- Streamlit for the intuitive UI framework
-
-## 📧 Contact
-
-For questions or support, please open an issue on GitHub.
-
-## 🗺️ Roadmap
-
-- [ ] Add support for flight recommendations
-- [ ] Integrate real-time hotel pricing APIs
-- [ ] Multi-language support
-- [ ] Mobile app version
-- [ ] User authentication and personalization
-- [ ] Enhanced visualization with 3D knowledge graphs
-- [ ] Integration with booking platforms
-
----
-
-<p align="center">
-  Made with ❤️ using Graph RAG Technology
-</p>
